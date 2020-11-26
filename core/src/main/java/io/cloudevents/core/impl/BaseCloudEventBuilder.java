@@ -17,17 +17,20 @@
 
 package io.cloudevents.core.impl;
 
+import java.net.URI;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Nonnull;
+
 import io.cloudevents.CloudEvent;
+import io.cloudevents.CloudEventContext;
 import io.cloudevents.CloudEventData;
 import io.cloudevents.Extension;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.data.BytesCloudEventData;
 import io.cloudevents.rw.CloudEventRWException;
-
-import javax.annotation.Nonnull;
-import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 
 public abstract class BaseCloudEventBuilder<SELF extends BaseCloudEventBuilder<SELF, T>, T extends CloudEvent> implements CloudEventBuilder {
 
@@ -35,33 +38,31 @@ public abstract class BaseCloudEventBuilder<SELF extends BaseCloudEventBuilder<S
     private final SELF self;
 
     protected CloudEventData data;
-    protected Map<String, Object> extensions;
+    protected Map<String, Object> extensions = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public BaseCloudEventBuilder() {
         this.self = (SELF) this;
-        this.extensions = new HashMap<>();
     }
 
-    @SuppressWarnings("unchecked")
-    public BaseCloudEventBuilder(CloudEvent event) {
-        this.self = (SELF) this;
+    public BaseCloudEventBuilder(CloudEventContext context) {
+        this();
+        setAttributes(context);
+    }
 
+    public BaseCloudEventBuilder(CloudEvent event) {
+        this();
         this.setAttributes(event);
         this.data = event.getData();
-        this.extensions = new HashMap<>();
-        for (String k : event.getExtensionNames()) {
-            this.extensions.put(k, event.getExtension(k));
-        }
     }
 
-    protected abstract void setAttributes(CloudEvent event);
+    protected abstract void setAttributes(CloudEventContext event);
 
     //TODO builder should accept data as Object and use data codecs (that we need to implement)
     // to encode data
 
     public SELF withData(byte[] data) {
-        this.data = new BytesCloudEventData(data);
+        this.data = BytesCloudEventData.wrap(data);
         return this.self;
     }
 
@@ -96,24 +97,24 @@ public abstract class BaseCloudEventBuilder<SELF extends BaseCloudEventBuilder<S
         return this.self;
     }
 
-    public SELF withExtension(@Nonnull String key, String value) {
-        if(!isValidExtensionName(key)){
+    public SELF withExtension(@Nonnull String key, @Nonnull String value) {
+        if (!isValidExtensionName(key)) {
             throw CloudEventRWException.newInvalidExtensionName(key);
         }
         this.extensions.put(key, value);
         return self;
     }
 
-    public SELF withExtension(@Nonnull String key, Number value) {
-        if(!isValidExtensionName(key)){
+    public SELF withExtension(@Nonnull String key, @Nonnull Number value) {
+        if (!isValidExtensionName(key)) {
             throw CloudEventRWException.newInvalidExtensionName(key);
         }
         this.extensions.put(key, value);
         return self;
     }
 
-    public SELF withExtension(@Nonnull String key, Boolean value) {
-        if(!isValidExtensionName(key)){
+    public SELF withExtension(@Nonnull String key, @Nonnull Boolean value) {
+        if (!isValidExtensionName(key)) {
             throw CloudEventRWException.newInvalidExtensionName(key);
         }
         this.extensions.put(key, value);

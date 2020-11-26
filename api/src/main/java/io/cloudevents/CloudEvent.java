@@ -22,7 +22,7 @@ import io.cloudevents.lang.Nullable;
  * Interface representing an in memory read only representation of a CloudEvent,
  * as specified by the <a href="https://github.com/cloudevents/spec/blob/v1.0/spec.md">CloudEvents specification</a>
  */
-public interface CloudEvent extends CloudEventAttributes, CloudEventExtensions {
+public interface CloudEvent extends CloudEventContext {
 
     /**
      * The event data

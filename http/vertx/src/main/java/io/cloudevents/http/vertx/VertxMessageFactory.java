@@ -4,11 +4,12 @@ import io.cloudevents.core.message.MessageReader;
 import io.cloudevents.core.message.MessageWriter;
 import io.cloudevents.core.message.impl.GenericStructuredMessageReader;
 import io.cloudevents.core.message.impl.MessageUtils;
-import io.cloudevents.core.message.impl.UnknownEncodingMessageReader;
 import io.cloudevents.http.vertx.impl.BinaryVertxMessageReaderImpl;
 import io.cloudevents.http.vertx.impl.CloudEventsHeaders;
-import io.cloudevents.http.vertx.impl.VertxWebClientRequestMessageWriterImpl;
 import io.cloudevents.http.vertx.impl.VertxHttpServerResponseMessageWriterImpl;
+import io.cloudevents.http.vertx.impl.VertxWebClientRequestMessageWriterImpl;
+import io.cloudevents.lang.Nullable;
+import io.cloudevents.rw.CloudEventRWException;
 import io.cloudevents.rw.CloudEventWriter;
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
@@ -36,15 +37,20 @@ public final class VertxMessageFactory {
      * @param headers Http headers
      * @param body    nullable buffer of the body
      * @return a Message implementation with potentially an unknown encoding
-     * @throws IllegalArgumentException If, in case of binary mode, the spec version is invalid
      */
-    public static MessageReader createReader(MultiMap headers, Buffer body) throws IllegalArgumentException {
+    public static MessageReader createReader(MultiMap headers, @Nullable Buffer body) throws CloudEventRWException {
         return MessageUtils.parseStructuredOrBinaryMessage(
             () -> headers.get(HttpHeaders.CONTENT_TYPE),
-            format -> new GenericStructuredMessageReader(format, body.getBytes()),
+            format -> {
+                if (body != null) {
+                    return new GenericStructuredMessageReader(format, body.getBytes());
+                }
+                throw CloudEventRWException.newOther(new IllegalStateException(
+                    "Found a structured message using format " + format.serializedContentType() + " with null body"
+                ));
+            },
             () -> headers.get(CloudEventsHeaders.SPEC_VERSION),
-            sv -> new BinaryVertxMessageReaderImpl(sv, headers, body),
-            UnknownEncodingMessageReader::new
+            sv -> new BinaryVertxMessageReaderImpl(sv, headers, body)
         );
     }
 
@@ -61,7 +67,7 @@ public final class VertxMessageFactory {
         request.bodyHandler(b -> {
             try {
                 prom.complete(createReader(request.headers(), b));
-            } catch (IllegalArgumentException e) {
+            } catch (final Exception e) {
                 prom.fail(e);
             }
         });

@@ -21,6 +21,7 @@ import io.cloudevents.CloudEvent;
 import io.cloudevents.SpecVersion;
 import io.cloudevents.core.CloudEventUtils;
 import io.cloudevents.core.impl.BaseCloudEventBuilder;
+import io.cloudevents.rw.CloudEventContextReader;
 import io.cloudevents.rw.CloudEventRWException;
 import io.cloudevents.types.Time;
 
@@ -52,13 +53,19 @@ public final class CloudEventBuilder extends BaseCloudEventBuilder<CloudEventBui
         super(event);
     }
 
+    public CloudEventBuilder(io.cloudevents.CloudEventContext context) {
+        super(context);
+    }
+
     @Override
-    protected void setAttributes(io.cloudevents.CloudEvent event) {
+    protected void setAttributes(io.cloudevents.CloudEventContext event) {
+        CloudEventContextReader contextReader = CloudEventUtils.toContextReader(event);
         if (event.getSpecVersion() == SpecVersion.V1) {
-            CloudEventUtils.toContextReader(event).readAttributes(this);
+            contextReader.readAttributes(this);
         } else {
-            CloudEventUtils.toContextReader(event).readAttributes(new V03ToV1AttributesConverter(this));
+            contextReader.readAttributes(new V03ToV1AttributesConverter(this));
         }
+        contextReader.readExtensions(this);
     }
 
     public CloudEventBuilder withId(String id) {
@@ -101,13 +108,13 @@ public final class CloudEventBuilder extends BaseCloudEventBuilder<CloudEventBui
     @Override
     public CloudEvent build() {
         if (id == null) {
-            throw createMissingAttributeException("id");
+            throw createMissingAttributeException(CloudEventV1.ID);
         }
         if (source == null) {
-            throw createMissingAttributeException("source");
+            throw createMissingAttributeException(CloudEventV1.SOURCE);
         }
         if (type == null) {
-            throw createMissingAttributeException("type");
+            throw createMissingAttributeException(CloudEventV1.TYPE);
         }
 
         return new CloudEventV1(id, source, type, datacontenttype, dataschema, subject, time, this.data, this.extensions);
@@ -133,34 +140,34 @@ public final class CloudEventBuilder extends BaseCloudEventBuilder<CloudEventBui
     @Override
     public CloudEventBuilder withAttribute(String name, String value) throws CloudEventRWException {
         switch (name) {
-            case "id":
+            case CloudEventV1.ID:
                 withId(value);
                 return this;
-            case "source":
+            case CloudEventV1.SOURCE:
                 try {
                     withSource(new URI(value));
                 } catch (URISyntaxException e) {
-                    throw CloudEventRWException.newInvalidAttributeValue("source", value, e);
+                    throw CloudEventRWException.newInvalidAttributeValue(CloudEventV1.SOURCE, value, e);
                 }
                 return this;
-            case "type":
+            case CloudEventV1.TYPE:
                 withType(value);
                 return this;
-            case "datacontenttype":
+            case CloudEventV1.DATACONTENTTYPE:
                 withDataContentType(value);
                 return this;
-            case "dataschema":
+            case CloudEventV1.DATASCHEMA:
                 try {
                     withDataSchema(new URI(value));
                 } catch (URISyntaxException e) {
-                    throw CloudEventRWException.newInvalidAttributeValue("dataschema", value, e);
+                    throw CloudEventRWException.newInvalidAttributeValue(CloudEventV1.DATASCHEMA, value, e);
                 }
                 return this;
-            case "subject":
+            case CloudEventV1.SUBJECT:
                 withSubject(value);
                 return this;
-            case "time":
-                withTime(Time.parseTime("time", value));
+            case CloudEventV1.TIME:
+                withTime(Time.parseTime(CloudEventV1.TIME, value));
                 return this;
         }
         throw CloudEventRWException.newInvalidAttributeName(name);
@@ -169,10 +176,10 @@ public final class CloudEventBuilder extends BaseCloudEventBuilder<CloudEventBui
     @Override
     public CloudEventBuilder withAttribute(String name, URI value) throws CloudEventRWException {
         switch (name) {
-            case "source":
+            case CloudEventV1.SOURCE:
                 withSource(value);
                 return this;
-            case "dataschema":
+            case CloudEventV1.DATASCHEMA:
                 withDataSchema(value);
                 return this;
         }
@@ -181,7 +188,7 @@ public final class CloudEventBuilder extends BaseCloudEventBuilder<CloudEventBui
 
     @Override
     public CloudEventBuilder withAttribute(String name, OffsetDateTime value) throws CloudEventRWException {
-        if ("time".equals(name)) {
+        if (CloudEventV1.TIME.equals(name)) {
             withTime(value);
             return this;
         }
