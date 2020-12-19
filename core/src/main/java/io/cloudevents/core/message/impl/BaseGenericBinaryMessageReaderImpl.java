@@ -57,17 +57,13 @@ public abstract class BaseGenericBinaryMessageReaderImpl<HK, HV> extends BaseBin
         // in order to complete the visit in one loop
         this.forEachHeader((key, value) -> {
             if (isContentTypeHeader(key)) {
-                visitor.withAttribute(CloudEventV1.DATACONTENTTYPE, toCloudEventsValue(value));
+                visitor.withContextAttribute(CloudEventV1.DATACONTENTTYPE, toCloudEventsValue(value));
             } else if (isCloudEventsHeader(key)) {
                 String name = toCloudEventsKey(key);
                 if (name.equals(CloudEventV1.SPECVERSION)) {
                     return;
                 }
-                if (this.version.getAllAttributes().contains(name)) {
-                    visitor.withAttribute(name, toCloudEventsValue(value));
-                } else {
-                    visitor.withExtension(name, toCloudEventsValue(value));
-                }
+                visitor.withContextAttribute(name, toCloudEventsValue(value));
             }
         });
 
@@ -79,14 +75,35 @@ public abstract class BaseGenericBinaryMessageReaderImpl<HK, HV> extends BaseBin
         return visitor.end();
     }
 
+    /**
+     * @param key header key
+     * @return true if this header is the content type header, false otherwise
+     */
     protected abstract boolean isContentTypeHeader(HK key);
 
+    /**
+     * @param key header key
+     * @return true if this header is a CloudEvents header, false otherwise
+     */
     protected abstract boolean isCloudEventsHeader(HK key);
 
+    /**
+     * @param key header key
+     * @return the key converted to a CloudEvents context attribute/extension name
+     */
     protected abstract String toCloudEventsKey(HK key);
 
+    /**
+     * Iterate over all the headers in the headers map.
+     *
+     * @param fn header consumer
+     */
     protected abstract void forEachHeader(BiConsumer<HK, HV> fn);
 
+    /**
+     * @param value header key
+     * @return the value converted to a valid CloudEvents attribute value as {@link String}.
+     */
     protected abstract String toCloudEventsValue(HV value);
 
 }

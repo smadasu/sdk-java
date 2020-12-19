@@ -15,14 +15,14 @@
  *
  */
 
-package io.cloudevents.http.restful.ws.impl;
+package io.cloudevents.spring.messaging;
 
-import io.cloudevents.CloudEvent;
+public class CloudEventsHeaders {
 
-public class Utils {
+	public static final String CE_PREFIX = "ce-";
 
-    public static boolean isCloudEventEntity(Object obj) {
-        return obj != null && CloudEvent.class.isAssignableFrom(obj.getClass());
-    }
+	public static final String SPEC_VERSION = CE_PREFIX + "specversion";
+
+	public static final String CONTENT_TYPE = CE_PREFIX + "datacontenttype";
 
 }

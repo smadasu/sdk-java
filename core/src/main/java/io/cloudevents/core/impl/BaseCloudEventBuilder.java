@@ -17,13 +17,6 @@
 
 package io.cloudevents.core.impl;
 
-import java.net.URI;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.annotation.Nonnull;
-
 import io.cloudevents.CloudEvent;
 import io.cloudevents.CloudEventContext;
 import io.cloudevents.CloudEventData;
@@ -31,6 +24,14 @@ import io.cloudevents.Extension;
 import io.cloudevents.core.builder.CloudEventBuilder;
 import io.cloudevents.core.data.BytesCloudEventData;
 import io.cloudevents.rw.CloudEventRWException;
+
+import javax.annotation.Nonnull;
+import java.net.URI;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
+
+import static io.cloudevents.core.v03.CloudEventV03.SPECVERSION;
 
 public abstract class BaseCloudEventBuilder<SELF extends BaseCloudEventBuilder<SELF, T>, T extends CloudEvent> implements CloudEventBuilder {
 
@@ -122,6 +123,24 @@ public abstract class BaseCloudEventBuilder<SELF extends BaseCloudEventBuilder<S
     }
 
     @Override
+    public SELF withExtension(@Nonnull String key, @Nonnull URI value) {
+        if (!isValidExtensionName(key)) {
+            throw CloudEventRWException.newInvalidExtensionName(key);
+        }
+        this.extensions.put(key, value);
+        return self;
+    }
+
+    @Override
+    public SELF withExtension(@Nonnull String key, @Nonnull OffsetDateTime value) {
+        if (!isValidExtensionName(key)) {
+            throw CloudEventRWException.newInvalidExtensionName(key);
+        }
+        this.extensions.put(key, value);
+        return self;
+    }
+
+    @Override
     public SELF withoutExtension(@Nonnull String key) {
         this.extensions.remove(key);
         return self;
@@ -162,24 +181,31 @@ public abstract class BaseCloudEventBuilder<SELF extends BaseCloudEventBuilder<S
         return new IllegalStateException("Attribute '" + attributeName + "' cannot be null");
     }
     /**
-     * Validates the extension name as defined in  CloudEvents spec
-     * See <a href="https://github.com/cloudevents/spec/blob/master/spec.md#attribute-naming-convention">attribute-naming-convention</a>
+     * Validates the extension name as defined in  CloudEvents spec.
+     *
      * @param name the extension name
      * @return true if extension name is valid, false otherwise
+     * @see <a href="https://github.com/cloudevents/spec/blob/master/spec.md#attribute-naming-convention">attribute-naming-convention</a>
      */
     private static boolean isValidExtensionName(String name) {
         if(name.length() > 20){
             return false;
         }
         char[] chars = name.toCharArray();
-        for (char c: chars)
-        if (!isValidChar(c)) {
-            return false;
-        }
+        for (char c : chars)
+            if (!isValidChar(c)) {
+                return false;
+            }
         return true;
     }
 
     private static boolean isValidChar(char c) {
         return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9');
+    }
+
+    protected void requireValidAttributeWrite(String name) {
+        if (name.equals(SPECVERSION)) {
+            throw new IllegalArgumentException("You should not set the specversion attribute through withContextAttribute methods");
+        }
     }
 }

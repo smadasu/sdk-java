@@ -74,11 +74,12 @@
         <module>http/vertx</module>
         <module>http/restful-ws</module>
         <module>kafka</module>
+        <module>spring</module>
     </modules>
 
     <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Maven plugins -->
@@ -154,7 +155,18 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>2.10.4</version>
+                <version>3.2.0</version>
+                <configuration>
+                    <detectLinks/>
+                    <links>
+                        <link>https://docs.spring.io/spring-framework/docs/current/javadoc-api/</link>
+                        <link>https://vertx.io/docs/apidocs/</link>
+                        <link>https://jakarta.ee/specifications/platform/8/apidocs/</link>
+                        <link>https://kafka.apache.org/25/javadoc/</link>
+                        <link>https://qpid.apache.org/releases/qpid-proton-j-0.33.7/api/</link>
+                        <link>https://fasterxml.github.io/jackson-databind/javadoc/2.10/</link>
+                    </links>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
